@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Satellite Operators — Compare</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #05060a; color: #e8ecf4;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  a { color: #8fb4ff; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 80px; }
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.09); margin-bottom: 26px; }
+  .top h1 { margin: 0; font-size: 20px; }
+  .top .sub { color: #8b93a7; font-size: 12.5px; margin-top: 3px; }
+  .backbtn { padding: 8px 13px; border-radius: 9px; background: #2f6df6; color: #fff; font-weight: 600;
+    text-decoration: none; font-size: 13px; }
+  h2 { font-size: 15px; letter-spacing: .3px; text-transform: uppercase; color: #aeb6c9;
+    margin: 40px 0 4px; }
+  h2 + .note { color: #79829a; font-size: 12px; margin: 0 0 18px; }
+  /* stock cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 14px; }
+  .card { background: rgba(15,18,28,.7); border: 1px solid rgba(255,255,255,.09); border-radius: 14px; padding: 15px; }
+  .card .co { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+  .card .co .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+  .card .const { color: #8b93a7; font-size: 12px; margin: 2px 0 10px; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .b-pub { background: rgba(95,211,138,.16); color: #7fe3a3; }
+  .b-priv { background: rgba(255,199,154,.16); color: #ffc89a; }
+  .b-gov { background: rgba(143,180,255,.16); color: #8fb4ff; }
+  .price { font-size: 24px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .chg { font-size: 13px; font-weight: 600; margin-left: 8px; }
+  .up { color: #58d68d; } .down { color: #ff6b6b; }
+  .spark { width: 100%; height: 46px; margin-top: 8px; display: block; }
+  .metaline { color: #8b93a7; font-size: 11.5px; margin-top: 8px; }
+  .ticker { color: #c2c9d8; font-size: 12px; font-weight: 600; }
+  .news { display: block; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.07);
+    text-decoration: none; color: #dfe5f1; }
+  .news .hl { font-size: 12.5px; line-height: 1.35; }
+  .news .src { color: #79829a; font-size: 11px; margin-top: 3px; }
+  .news:hover .hl { color: #8fb4ff; }
+  /* engineering schematic cards */
+  .eng { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .schem { background: rgba(11,14,22,.85); border: 1px solid rgba(255,255,255,.09); border-radius: 14px;
+    overflow: hidden; }
+  .schem .head { padding: 13px 15px 8px; }
+  .schem .head .name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .schem .head .maker { color: #8b93a7; font-size: 12px; margin-top: 2px; }
+  .schem svg { width: 100%; height: auto; display: block; background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px) 0 0/22px 22px,
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0/22px 22px, #070a12; }
+  .chips { padding: 12px 15px 15px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11px; padding: 3px 9px; border-radius: 7px; background: rgba(255,255,255,.06);
+    color: #cdd4e2; border: 1px solid rgba(255,255,255,.07); }
+  .chip b { color: #fff; }
+  .feat { padding: 0 15px 14px; }
+  .feat .f { font-size: 12.5px; color: #cfd6e4; padding: 3px 0 3px 16px; position: relative; }
+  .feat .f::before { content: "▸"; position: absolute; left: 0; color: #5aa0ff; }
+  .feat .feat-title { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: #79829a; margin: 4px 0 3px; }
+  /* comparison bars */
+  .bars { background: rgba(15,18,28,.6); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 18px; }
+  .barrow { display: grid; grid-template-columns: 150px 1fr 96px; align-items: center; gap: 12px; margin: 7px 0; }
+  .barrow .lbl { font-size: 12.5px; color: #cfd6e4; display: flex; align-items: center; gap: 7px; }
+  .barrow .lbl .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .track { background: rgba(255,255,255,.06); border-radius: 6px; height: 16px; overflow: hidden; }
+  .fill { height: 100%; border-radius: 6px; }
+  .barrow .val { font-size: 12px; text-align: right; color: #e8ecf4; font-variant-numeric: tabular-nums; }
+  .metric-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .metric-tabs button { padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12);
+    background: transparent; color: #cdd4e2; cursor: pointer; font-size: 12.5px; }
+  .metric-tabs button.on { background: #2f6df6; border-color: #2f6df6; color: #fff; font-weight: 600; }
+  .disclaimer { color: #6f7891; font-size: 11.5px; margin-top: 40px; border-top: 1px solid rgba(255,255,255,.07); padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>🛰️ Satellite Operators — Engineering & Market Comparison</h1>
+      <div class="sub">Live-ish snapshot · stock &amp; news as of early July 2026 · specs are public/approximate</div>
+    </div>
+    <a class="backbtn" href="satellites.html">← Back to 3D globe</a>
+  </div>
+
+  <h2>Capability comparison</h2>
+  <p class="note">At-a-glance, across the satellite types in the tracker. Toggle the metric. Scales are logarithmic — the ranges are enormous.</p>
+  <div class="bars">
+    <div class="metric-tabs" id="metricTabs"></div>
+    <div id="barChart"></div>
+  </div>
+
+  <h2>Engineering schematics</h2>
+  <p class="note">What each satellite actually looks like, with its key hardware and engineering feats highlighted.</p>
+  <div class="eng" id="engGrid"></div>
+
+  <h2>Stocks &amp; recent news</h2>
+  <p class="note">Prices are point-in-time (early July 2026) and for reference only — not investment advice. Sparklines populate from a local data file when available.</p>
+  <div class="grid" id="stockGrid"></div>
+
+  <div class="disclaimer" id="disc"></div>
+</div>
+
+<script>
+// ---------- DATA ----------
+// Specs are approximate, from public sources. Throughput is per-satellite where meaningful.
+const SATS = [
+  {
+    id:'starlink', name:'Starlink V2 Mini', color:'#4ea0ff', maker:'SpaceX', band:'LEO',
+    alt:550, mass:800, life:5, gbps:100, thClass:'comms',
+    chips:[['Orbit','LEO ~550 km'],['Mass','~800 kg'],['Throughput','~100 Gbps'],['Life','~5 yr'],['Links','Laser ISL']],
+    feats:{
+      'Comms payload':['Ku/Ka-band phased-array antennas (steerable spot beams)','3× optical inter-satellite laser links (~200 Gbps each)','E-band gateway backhaul'],
+      'Bus & propulsion':['Single large solar array (~100 m²)','Argon Hall-effect (electric) thrusters','Autonomous collision-avoidance (onboard)']
+    },
+    feat:'Laser-meshed so data hops sat-to-sat without ground stations — global coverage over oceans.'
+  },
+  {
+    id:'oneweb', name:'OneWeb Gen-1', color:'#b07cff', maker:'Airbus OneWeb Satellites', band:'LEO',
+    alt:1200, mass:150, life:7, gbps:7.5, thClass:'comms',
+    chips:[['Orbit','LEO ~1200 km'],['Mass','~150 kg'],['Throughput','~7.5 Gbps'],['Life','5–7 yr'],['Links','Bent-pipe']],
+    feats:{
+      'Comms payload':['Ku-band steerable user beams','Ka-band feeder link to gateways','"Bent-pipe" — relays via ground, no inter-sat links'],
+      'Bus & propulsion':['Two deployable solar wings','Xenon Hall-effect thruster','Mass-produced (~2/day at peak on assembly line)']
+    },
+    feat:'First mass-produced comms satellite — an aircraft-style assembly line building ~2 per day.'
+  },
+  {
+    id:'iridium', name:'Iridium NEXT', color:'#7fe3a3', maker:'Thales Alenia / Northrop', band:'LEO',
+    alt:780, mass:860, life:15, gbps:0.02, thClass:'comms',
+    chips:[['Orbit','LEO ~780 km'],['Mass','~860 kg'],['Payload','L-band voice/IoT'],['Life','~15 yr'],['Links','Ka cross-links']],
+    feats:{
+      'Comms payload':['L-band phased array — voice, IoT & backup PNT','4× Ka-band inter-satellite cross-links (full mesh)','Hosted payloads: Aireon ADS-B air-traffic surveillance'],
+      'Bus & propulsion':['Two solar wings','Hydrazine propulsion','66-sat cross-linked mesh — truly pole-to-pole']
+    },
+    feat:'The only fully cross-linked mesh constellation — every sat talks to its neighbors, covering the poles.'
+  },
+  {
+    id:'gps', name:'GPS III', color:'#ffd23f', maker:'Lockheed Martin', band:'MEO',
+    alt:20200, mass:4400, life:15, gbps:null, thClass:'nav',
+    chips:[['Orbit','MEO ~20,200 km'],['Mass','~4,400 kg'],['Signal','L1/L2/L5 nav'],['Life','15 yr'],['Clock','Rubidium']],
+    feats:{
+      'Navigation payload':['L-band nav antenna — L1/L2/L5 civil + M-code military','Rubidium atomic clocks (ns-level timing)','3× accuracy, 8× anti-jam vs legacy GPS'],
+      'Newest (SV10)':['Optical / laser crosslink demonstration','Laser retroreflector array for precise orbit','Reprogrammable payload for future signals']
+    },
+    feat:'Atomic clocks so precise that timing error of a billionth of a second = ~30 cm of position error.'
+  },
+  {
+    id:'planet', name:'Planet Pelican / SuperDove', color:'#9affd1', maker:'Planet Labs', band:'LEO',
+    alt:475, mass:200, life:3, gbps:null, thClass:'imaging',
+    chips:[['Orbit','LEO ~475 km'],['Mass','~200 kg (Pelican)'],['Resolution','~50 cm'],['Life','~3 yr'],['Bands','6 multispectral']],
+    feats:{
+      'Imaging payload':['Telescope with ~50 cm-class optics (Pelican)','6-band multispectral imager','SuperDove: 3U CubeSat (~5 kg), 3–4 m imagery — daily whole-Earth'],
+      'Bus & smarts':['Agile reaction-wheel pointing','On-board AI edge compute','X-band image downlink']
+    },
+    feat:'Images the entire land surface of Earth every day — a "scanner for the planet."'
+  },
+  {
+    id:'spire', name:'Spire LEMUR-2', color:'#ffc89a', maker:'Spire Global', band:'LEO',
+    alt:550, mass:5, life:3, gbps:null, thClass:'sensing',
+    chips:[['Orbit','LEO ~550 km'],['Form','3U CubeSat'],['Mass','~5 kg'],['Life','2–3 yr'],['Sensors','RO / AIS / ADS-B']],
+    feats:{
+      'Sensing payload':['GPS radio-occultation antennas (atmospheric weather profiles)','AIS receiver — global ship tracking','ADS-B receiver — global aircraft tracking'],
+      'Bus':['Deployable solar panels','Shoebox-sized — hundreds built per year','Software-defined radio payload']
+    },
+    feat:'A weather station, ship tracker and plane tracker crammed into a 10×10×30 cm box.'
+  },
+  {
+    id:'geo', name:'GEO HTS comsat (ViaSat-3 class)', color:'#ff8fcf', maker:'Boeing / Airbus / Maxar', band:'GEO',
+    alt:35786, mass:6000, life:15, gbps:1000, thClass:'comms',
+    chips:[['Orbit','GEO 35,786 km'],['Mass','~6,000 kg'],['Throughput','up to ~1 Tbps'],['Life','15 yr'],['Beams','100s spot beams']],
+    feats:{
+      'Comms payload':['Large deployable Ka-band reflectors','Hundreds of narrow spot beams for frequency reuse','Up to ~1,000 Gbps (1 Tbps) total capacity'],
+      'Bus & propulsion':['Two large solar wings (~kW-class power)','Chemical + electric propulsion for station-keeping','Parks over one longitude — appears fixed in the sky']
+    },
+    feat:'One satellite can push ~1 terabit/second — more than an entire early Starlink shell, but from a single fixed point.'
+  }
+];
+
+// ---------- SCHEMATIC SVGs ----------
+// Blueprint-style, stroke = satellite accent color. Callout leaders point to highlighted features.
+function schematic(s){
+  const c = s.color;
+  const lbl = (x,y,anchor,txt)=>`<text x="${x}" y="${y}" fill="#cdd4e2" font-size="10" text-anchor="${anchor}">${txt}</text>`;
+  const leader = (x1,y1,x2,y2)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="1" stroke-dasharray="2 2" opacity=".7"/><circle cx="${x2}" cy="${y2}" r="2.2" fill="${c}"/>`;
+  const bodies = {
+    starlink:`
+      <rect x="150" y="150" width="150" height="26" fill="none" stroke="${c}" stroke-width="1.6"/>
+      <line x1="150" y1="176" x2="150" y2="235" stroke="${c}" stroke-width="1.4"/><line x1="300" y1="176" x2="300" y2="235" stroke="${c}" stroke-width="1.4"/>
+      ${[0,1,2,3].map(i=>`<line x1="${160+i*33}" y1="176" x2="${160+i*33}" y2="235" stroke="${c}" stroke-width=".7" opacity=".6"/>`).join('')}
+      <line x1="150" y1="235" x2="300" y2="235" stroke="${c}" stroke-width="1.4"/>
+      <rect x="150" y="60" width="150" height="88" fill="none" stroke="${c}" stroke-width="1.4" opacity=".85"/>
+      ${[0,1,2,3,4].map(i=>`<line x1="150" y1="${74+i*16}" x2="300" y2="${74+i*16}" stroke="${c}" stroke-width=".6" opacity=".5"/>`).join('')}
+      <line x1="225" y1="148" x2="225" y2="150" stroke="${c}"/>
+      ${leader(150,240,120,255)}${lbl(116,258,'end','Ku/Ka phased array')}
+      ${leader(300,205,340,205)}${lbl(344,208,'start','Laser ISL ×3')}
+      ${leader(225,60,225,42)}${lbl(225,36,'middle','Solar array (~100 m²)')}
+      ${leader(160,163,120,150)}${lbl(116,153,'end','Argon Hall thruster')}`,
+    oneweb:`
+      <rect x="196" y="120" width="60" height="70" fill="none" stroke="${c}" stroke-width="1.6"/>
+      <rect x="90" y="132" width="100" height="46" fill="none" stroke="${c}" stroke-width="1.3"/><line x1="140" y1="132" x2="140" y2="178" stroke="${c}" stroke-width=".6" opacity=".6"/>
+      <rect x="262" y="132" width="100" height="46" fill="none" stroke="${c}" stroke-width="1.3"/><line x1="312" y1="132" x2="312" y2="178" stroke="${c}" stroke-width=".6" opacity=".6"/>
+      <path d="M212 190 l6 26 l16 0 l6 -26" fill="none" stroke="${c}" stroke-width="1.3"/>
+      ${leader(226,216,226,244)}${lbl(226,258,'middle','Ku user beams (nadir)')}
+      ${leader(196,150,150,110)}${lbl(146,108,'end','Two solar wings')}
+      ${leader(256,150,320,110)}${lbl(324,108,'start','Ka feeder link')}
+      ${leader(226,120,226,96)}${lbl(226,90,'middle','Bent-pipe · no ISL')}`,
+    iridium:`
+      <rect x="198" y="96" width="56" height="60" fill="none" stroke="${c}" stroke-width="1.6"/>
+      <rect x="96" y="106" width="96" height="40" fill="none" stroke="${c}" stroke-width="1.3"/>
+      <rect x="260" y="106" width="96" height="40" fill="none" stroke="${c}" stroke-width="1.3"/>
+      <path d="M198 156 l-16 40 l40 0 z" fill="none" stroke="${c}" stroke-width="1.3"/>
+      <path d="M226 156 l0 44" stroke="${c}" stroke-width="1.3"/>
+      <path d="M254 156 l16 40 l-40 0 z" fill="none" stroke="${c}" stroke-width="1.3"/>
+      ${leader(214,196,150,236)}${lbl(146,238,'end','L-band phased array')}
+      ${leader(254,126,320,96)}${lbl(324,94,'start','Ka cross-links ×4 (mesh)')}
+      ${leader(198,126,150,96)}${lbl(146,94,'end','Solar wings')}
+      ${leader(240,180,300,210)}${lbl(304,213,'start','Aireon ADS-B payload')}`,
+    gps:`
+      <rect x="192" y="104" width="66" height="66" fill="none" stroke="${c}" stroke-width="1.6"/>
+      <rect x="80" y="120" width="104" height="34" fill="none" stroke="${c}" stroke-width="1.3"/>
+      <rect x="266" y="120" width="104" height="34" fill="none" stroke="${c}" stroke-width="1.3"/>
+      <path d="M200 170 q25 34 50 0" fill="none" stroke="${c}" stroke-width="1.4"/>
+      ${[0,1,2,3].map(i=>`<circle cx="${208+i*11}" cy="178" r="2" fill="none" stroke="${c}"/>`).join('')}
+      ${leader(225,186,225,230)}${lbl(225,244,'middle','L-band nav antenna (Earth coverage)')}
+      ${leader(225,137,300,104)}${lbl(304,102,'start','Rubidium atomic clocks (inside)')}
+      ${leader(192,137,140,104)}${lbl(136,102,'end','Solar wings')}
+      ${leader(258,150,310,168)}${lbl(314,171,'start','Optical crosslink demo (SV10)')}`,
+    planet:`
+      <rect x="200" y="110" width="46" height="86" fill="none" stroke="${c}" stroke-width="1.6"/>
+      <rect x="150" y="122" width="46" height="30" fill="none" stroke="${c}" stroke-width="1.1"/>
+      <rect x="250" y="122" width="46" height="30" fill="none" stroke="${c}" stroke-width="1.1"/>
+      <circle cx="223" cy="205" r="12" fill="none" stroke="${c}" stroke-width="1.5"/><circle cx="223" cy="205" r="5" fill="none" stroke="${c}"/>
+      ${leader(223,217,223,246)}${lbl(223,258,'middle','Telescope (~50 cm optics), nadir')}
+      ${leader(223,110,223,88)}${lbl(223,82,'middle','Star trackers / reaction wheels')}
+      ${leader(196,137,150,100)}${lbl(146,98,'end','Body-mount solar')}
+      ${leader(246,150,300,138)}${lbl(304,141,'start','6-band multispectral + AI compute')}`,
+    spire:`
+      <rect x="206" y="120" width="34" height="80" fill="none" stroke="${c}" stroke-width="1.8"/>
+      <line x1="206" y1="147" x2="240" y2="147" stroke="${c}" stroke-width=".7" opacity=".6"/><line x1="206" y1="173" x2="240" y2="173" stroke="${c}" stroke-width=".7" opacity=".6"/>
+      <rect x="150" y="128" width="52" height="26" fill="none" stroke="${c}" stroke-width="1.1"/>
+      <rect x="244" y="128" width="52" height="26" fill="none" stroke="${c}" stroke-width="1.1"/>
+      <path d="M223 120 l-10 -20 M223 120 l10 -20" stroke="${c}" stroke-width="1.2"/>
+      ${leader(223,104,223,80)}${lbl(223,74,'middle','GPS radio-occultation antennas')}
+      ${leader(240,160,300,168)}${lbl(304,171,'start','AIS (ships) + ADS-B (aircraft)')}
+      ${leader(206,190,150,214)}${lbl(146,216,'end','3U CubeSat · ~5 kg')}
+      ${leader(202,140,150,110)}${lbl(146,108,'end','Deployable solar')}`,
+    geo:`
+      <rect x="204" y="118" width="54" height="74" fill="none" stroke="${c}" stroke-width="1.7"/>
+      <rect x="96" y="130" width="100" height="50" fill="none" stroke="${c}" stroke-width="1.3"/>
+      ${[0,1].map(i=>`<line x1="${129+i*34}" y1="130" x2="${129+i*34}" y2="180" stroke="${c}" stroke-width=".6" opacity=".5"/>`).join('')}
+      <rect x="266" y="130" width="100" height="50" fill="none" stroke="${c}" stroke-width="1.3"/>
+      ${[0,1].map(i=>`<line x1="${299+i*34}" y1="130" x2="${299+i*34}" y2="180" stroke="${c}" stroke-width=".6" opacity=".5"/>`).join('')}
+      <path d="M204 150 q-34 5 -40 40" fill="none" stroke="${c}" stroke-width="1.4"/><ellipse cx="168" cy="196" rx="16" ry="7" fill="none" stroke="${c}" stroke-width="1.4"/>
+      <path d="M258 150 q34 5 40 40" fill="none" stroke="${c}" stroke-width="1.4"/><ellipse cx="294" cy="196" rx="16" ry="7" fill="none" stroke="${c}" stroke-width="1.4"/>
+      ${leader(168,203,150,236)}${lbl(146,238,'end','Large Ka reflectors (spot beams)')}
+      ${leader(231,118,231,92)}${lbl(231,86,'middle','~1 Tbps total capacity')}
+      ${leader(150,155,110,110)}${lbl(106,108,'end','Solar wings (kW-class)')}
+      ${leader(258,168,320,188)}${lbl(324,191,'start','Chem + electric propulsion')}`
+  };
+  return `<svg viewBox="0 0 440 280" xmlns="http://www.w3.org/2000/svg">${bodies[s.id]}</svg>`;
+}
+
+// ---------- STOCKS & NEWS ----------
+const STOCKS = [
+  { co:'SpaceX (Starlink)', color:'#4ea0ff', constellation:'Starlink', status:'private',
+    note:'Private company — no public stock. Last reported secondary-market valuation ~$350B (2025).',
+    news:{ hl:'SpaceX launches 81 satellites to orbit from California, lands booster at sea', src:'Space.com · Jul 7, 2026',
+      url:'https://www.space.com/space-exploration/launches-spacecraft/spacex-falcon-9-transporter-17-rideshare-launch-81-satellites' } },
+  { co:'Eutelsat (OneWeb)', color:'#b07cff', constellation:'OneWeb', status:'public', ticker:'ETL.PA / EUTLF', currency:'€',
+    price:2.49, chg:-36, chgLabel:'30d', metaline:'Euronext Paris · –46% from May peak; €5B raised for OneWeb build-out',
+    news:{ hl:'Eutelsat procures a further 340 OneWeb LEO satellites from Airbus', src:'Yahoo Finance · Jul 2026',
+      url:'https://finance.yahoo.com/news/eutelsat-procures-further-340-oneweb-090000952.html' } },
+  { co:'Iridium', color:'#7fe3a3', constellation:'Iridium NEXT', status:'public', ticker:'IRDM', currency:'$',
+    price:52.59, chg:57, chgLabel:'90d', metaline:'Nasdaq · YTD +196% · Rocket Lab to acquire at ~$54/sh (~$6B)',
+    news:{ hl:'Rocket Lab to acquire Iridium in ~$6B cash-and-stock deal (~$54/share)', src:'Simply Wall St · Jun–Jul 2026',
+      url:'https://simplywall.st/stocks/us/telecom/nasdaq-irdm/iridium-communications/news/iridium-communications-irdm-draws-a-54-offer-is-the-stock-no' } },
+  { co:'Planet Labs', color:'#9affd1', constellation:'Planet', status:'public', ticker:'PL', currency:'$',
+    price:31.69, chg:-7.3, chgLabel:'1d', metaline:'NYSE · Record Q1 rev $94.2M (+42% YoY) · mkt cap ~$11B',
+    news:{ hl:'Planet posts record Q1 revenue ($94.2M, +42% YoY); nine AI-enabled Pelican sats now in orbit', src:'Planet IR · Jul 2026',
+      url:'https://investors.planet.com/news/default.aspx' } },
+  { co:'Spire Global', color:'#ffc89a', constellation:'Spire', status:'public', ticker:'SPIR', currency:'$',
+    price:18.38, chg:null, chgLabel:'', metaline:'NYSE · New Munich factory lifts capacity to 300–400 sats/yr',
+    news:{ hl:'Ten Spire satellites arrive at Vandenberg for Transporter-17 rideshare', src:'Spire IR · 2026',
+      url:'https://ir.spire.com/news-events/press-releases/detail/286/ten-spire-global-satellites-arrive-at-launch-site-ahead-of' } },
+  { co:'Lockheed Martin (GPS III)', color:'#ffd23f', constellation:'GPS (contractor)', status:'public', ticker:'LMT', currency:'$',
+    price:540, chg:null, chgLabel:'', metaline:'NYSE · Builds GPS III/IIIF for US Space Force (not the operator)',
+    news:{ hl:'Lockheed Martin launches final GPS III (SV10) with optical crosslink demo; moves to GPS IIIF', src:'Lockheed Martin · Apr 2026',
+      url:'https://news.lockheedmartin.com/2026-04-21-Lockheed-Martin-Launches-GPS-III-Satellite,-Paving-the-Way-for-Next-Generation-GPS-IIIF-Spacecraft' } },
+  { co:'Galileo · GLONASS · BeiDou · NOAA', color:'#8fb4ff', constellation:'Government programs', status:'gov',
+    note:'Government / intergovernmental programs (EU/ESA, Russia, China, US) — publicly funded, no tradeable equity.' }
+];
+
+// history is injected here when the data feed is reachable: STOCK_HISTORY[ticker] = [[date,close],...]
+const STOCK_HISTORY = {};
+
+// ---------- RENDER: engineering ----------
+document.getElementById('engGrid').innerHTML = SATS.map(s => `
+  <div class="schem">
+    <div class="head">
+      <div class="name"><span style="width:11px;height:11px;border-radius:50%;background:${s.color};display:inline-block"></span>${s.name}</div>
+      <div class="maker">${s.maker} · ${s.band}</div>
+    </div>
+    ${schematic(s)}
+    <div class="chips">${s.chips.map(([k,v])=>`<span class="chip">${k}: <b>${v}</b></span>`).join('')}</div>
+    <div class="feat">
+      ${Object.entries(s.feats).map(([grp,list])=>`<div class="feat-title">${grp}</div>${list.map(f=>`<div class="f">${f}</div>`).join('')}`).join('')}
+      <div class="f" style="margin-top:8px;color:#ffe08a">🛠 ${s.feat}</div>
+    </div>
+  </div>`).join('');
+
+// ---------- RENDER: comparison bars ----------
+const METRICS = [
+  { key:'alt',  label:'Altitude (km)',      fmt:v=>v.toLocaleString()+' km', log:true },
+  { key:'mass', label:'Mass (kg)',          fmt:v=>v.toLocaleString()+' kg', log:true },
+  { key:'gbps', label:'Throughput (Gbps)',  fmt:v=>v==null?'n/a (non-comms)':(v<1?(v*1000)+' Mbps':v.toLocaleString()+' Gbps'), log:true },
+  { key:'life', label:'Design life (yr)',   fmt:v=>v+' yr', log:false }
+];
+let curMetric = 0;
+function renderBars(){
+  const m = METRICS[curMetric];
+  const rows = SATS.filter(s => s[m.key]!=null);
+  const vals = rows.map(s=>s[m.key]);
+  const max = Math.max(...vals), min = Math.min(...vals);
+  const width = v => {
+    if (m.log){ const lo=Math.log10(Math.max(min,0.001)), hi=Math.log10(max);
+      return 6 + 94*((Math.log10(Math.max(v,0.001))-lo)/((hi-lo)||1)); }
+    return 6 + 94*(v/max);
+  };
+  document.getElementById('barChart').innerHTML = rows.sort((a,b)=>b[m.key]-a[m.key]).map(s=>`
+    <div class="barrow">
+      <div class="lbl"><span class="dot" style="background:${s.color}"></span>${s.name.split(' (')[0]}</div>
+      <div class="track"><div class="fill" style="width:${width(s[m.key])}%;background:${s.color}"></div></div>
+      <div class="val">${m.fmt(s[m.key])}</div>
+    </div>`).join('') +
+    (SATS.some(s=>s[m.key]==null) ? `<div class="metaline">Not shown (metric n/a): ${SATS.filter(s=>s[m.key]==null).map(s=>s.name.split(' (')[0]).join(', ')}</div>` : '');
+  document.querySelectorAll('#metricTabs button').forEach((b,i)=>b.classList.toggle('on', i===curMetric));
+}
+document.getElementById('metricTabs').innerHTML = METRICS.map((m,i)=>`<button>${m.label}</button>`).join('');
+document.querySelectorAll('#metricTabs button').forEach((b,i)=>b.onclick=()=>{curMetric=i;renderBars();});
+renderBars();
+
+// ---------- RENDER: stocks + news ----------
+function sparkline(hist, color){
+  if (!hist || hist.length<2) return '';
+  const ys = hist.map(p=>p[1]); const min=Math.min(...ys), max=Math.max(...ys);
+  const W=240,H=46, n=hist.length;
+  const pts = hist.map((p,i)=>`${(i/(n-1))*W},${H-4-((p[1]-min)/((max-min)||1))*(H-8)}`).join(' ');
+  const up = ys[n-1]>=ys[0];
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <polyline points="${pts}" fill="none" stroke="${up?'#58d68d':'#ff6b6b'}" stroke-width="1.6"/></svg>`;
+}
+function badge(st){ return st==='private'?'<span class="badge b-priv">Private</span>'
+  : st==='gov'?'<span class="badge b-gov">Government</span>':'<span class="badge b-pub">Public</span>'; }
+
+document.getElementById('stockGrid').innerHTML = STOCKS.map(s=>{
+  const hist = s.ticker && STOCK_HISTORY[s.ticker];
+  const chg = s.chg!=null ? `<span class="chg ${s.chg>=0?'up':'down'}">${s.chg>=0?'▲':'▼'} ${Math.abs(s.chg)}% <span style="color:#79829a;font-weight:400">${s.chgLabel}</span></span>` : '';
+  const priceBlock = (s.status==='public') ? `
+      <div><span class="ticker">${s.ticker}</span></div>
+      <div class="price">${s.currency}${s.price}${chg}</div>
+      ${hist?sparkline(hist,s.color):'<div class="metaline">history: add local feed to draw sparkline</div>'}
+      <div class="metaline">${s.metaline||''}</div>` : `
+      <div class="metaline" style="margin-top:8px">${s.note}</div>`;
+  return `<div class="card">
+    <div class="co"><span class="dot" style="background:${s.color}"></span>${s.co}</div>
+    <div class="const">${s.constellation} · ${badge(s.status)}</div>
+    ${priceBlock}
+    ${s.news?`<a class="news" href="${s.news.url}" target="_blank" rel="noopener">
+      <div class="hl">📰 ${s.news.hl}</div><div class="src">${s.news.src} ↗</div></a>`:''}
+  </div>`;
+}).join('');
+
+document.getElementById('disc').innerHTML =
+  'Stock prices and news are a manual snapshot from early July 2026 (sources linked per card) and are for reference only — not investment advice. ' +
+  'SpaceX is private; GPS/Galileo/GLONASS/BeiDou/NOAA are government programs. Satellite specs are approximate figures from public sources. ' +
+  'Throughput is per-satellite where meaningful; navigation/imaging/sensing craft carry no comms throughput and are excluded from that chart.';
+</script>
+</body>
+</html>

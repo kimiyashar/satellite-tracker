@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Overhead — live satellite tracker</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #05060a; color: #e8ecf4;
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; overflow: hidden; }
+  #globe { position: fixed; inset: 0; }
+  #panel { position: fixed; top: 0; right: 0; width: 350px; max-width: 92vw; height: 100%;
+    background: rgba(10,12,20,.82); backdrop-filter: blur(10px);
+    border-left: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; }
+  header { padding: 16px 18px 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
+  header h1 { margin: 0; font-size: 16px; letter-spacing: .2px; }
+  header .sub { color: #8b93a7; font-size: 12px; margin-top: 4px; }
+  .controls { padding: 12px 18px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255,255,255,.08); }
+  .controls input { width: 92px; padding: 6px 8px; border-radius: 7px; border: 1px solid rgba(255,255,255,.14);
+    background: #0c0f18; color: #e8ecf4; font-size: 13px; }
+  .controls button { padding: 7px 11px; border-radius: 7px; border: 0; cursor: pointer;
+    background: #2f6df6; color: #fff; font-size: 13px; font-weight: 600; }
+  .controls button.ghost { background: rgba(255,255,255,.08); color: #cdd4e2; }
+  label.small { color: #8b93a7; font-size: 11px; width: 100%; margin-top: 2px; }
+  #count { padding: 10px 18px; color: #9aa3b8; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  #legend { padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 6px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.08); max-height: 168px; overflow-y: auto; }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #c2c9d8; cursor: pointer; opacity: 1; user-select: none; }
+  .leg.off { opacity: .32; }
+  .leg .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .leg .n { color: #79829a; }
+  #list { flex: 1; overflow-y: auto; }
+  .row { padding: 9px 18px; border-bottom: 1px solid rgba(255,255,255,.05); cursor: pointer; }
+  .row:hover { background: rgba(255,255,255,.04); }
+  .row .name { font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .row .name .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .row .meta { color: #8b93a7; font-size: 12px; margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .elev { color: #5fd38a; font-variant-numeric: tabular-nums; }
+  a { color: #8fb4ff; }
+  #tip { position: fixed; pointer-events: none; z-index: 20; display: none; max-width: 250px;
+    background: rgba(8,10,16,.94); border: 1px solid rgba(255,255,255,.16); padding: 7px 10px;
+    border-radius: 9px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+  #tip b { font-size: 13px; }
+  #tip .o { color: #9aa3b8; }
+  #tip .hint { color: #6f7891; }
+</style>
+</head>
+<body>
+<div id="globe"></div>
+<div id="tip"></div>
+<div id="panel">
+  <header>
+    <h1>🛰️ Overhead</h1>
+    <div class="sub">Live tracker · 12k satellites · CelesTrak data</div>
+    <a href="compare.html" style="display:inline-block;margin-top:9px;padding:7px 12px;border-radius:8px;background:#2f6df6;color:#fff;font-size:12.5px;font-weight:600;text-decoration:none">📊 Compare companies →</a>
+  </header>
+  <div class="controls">
+    <button id="locate">Use my location</button>
+    <input id="lat" placeholder="lat" />
+    <input id="lon" placeholder="lon" />
+    <button id="apply" class="ghost">Set</button>
+    <label class="small">Each dot is a satellite floating at its real altitude, colored by owner. Hover a dot to label it, click to fly in. List below = above your horizon now.</label>
+  </div>
+  <div id="legend"></div>
+  <div id="count">Loading orbital data…</div>
+  <div id="list"></div>
+</div>
+
+<script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+<script src="https://unpkg.com/satellite.js@5.0.0/dist/satellite.min.js"></script>
+<script src="https://unpkg.com/globe.gl@2.32.0/dist/globe.gl.min.js"></script>
+<script>
+let observer = { lat: 37.32, lon: -122.06 };
+let sats = [];                 // {name, satrec, owner, color, r,g,b}
+const hidden = new Set();      // owners toggled off
+
+// --- floating-dot point cloud (Three.js) ---
+let cloud, cloudPos, cloudCol, posAttr, colAttr;
+let drawn = [];                // per-dot metadata, parallel to cloud draw order
+let drawnCount = 0;            // how many dots are currently live (rest of buffer is stale)
+
+function roundDotTexture(){
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(32,32,0,32,32,32);
+  g.addColorStop(0,  'rgba(255,255,255,1)');
+  g.addColorStop(.55,'rgba(255,255,255,1)');
+  g.addColorStop(1,  'rgba(255,255,255,0)');
+  x.fillStyle = g; x.beginPath(); x.arc(32,32,32,0,Math.PI*2); x.fill();
+  const t = new THREE.Texture(c); t.needsUpdate = true; return t;
+}
+
+const globe = Globe()(document.getElementById('globe'))
+  .globeImageUrl('https://unpkg.com/three-globe@2.31.0/example/img/earth-blue-marble.jpg')
+  .backgroundColor('#05060a');
+
+window.addEventListener('resize', () => globe.width(window.innerWidth).height(window.innerHeight));
+globe.width(window.innerWidth).height(window.innerHeight);
+
+function setObserver(lat, lon){
+  observer = { lat, lon };
+  document.getElementById('lat').value = lat.toFixed(3);
+  document.getElementById('lon').value = lon.toFixed(3);
+  globe.pointOfView({ lat, lng: lon, altitude: 2.2 }, 800);
+}
+document.getElementById('locate').onclick = () => navigator.geolocation.getCurrentPosition(
+  p => setObserver(p.coords.latitude, p.coords.longitude),
+  e => alert("Couldn't get location: " + e.message + "\nType a lat/lon instead."));
+document.getElementById('apply').onclick = () => {
+  const la = parseFloat(lat.value), lo = parseFloat(lon.value);
+  if (!isNaN(la) && !isNaN(lo)) setObserver(la, lo);
+};
+
+function buildLegend(){
+  const byOwner = {};
+  for (const s of sats){
+    byOwner[s.owner] = byOwner[s.owner] || { color: s.color, n: 0 };
+    byOwner[s.owner].n++;
+  }
+  const el = document.getElementById('legend');
+  el.innerHTML = Object.entries(byOwner).sort((a,b)=>b[1].n-a[1].n)
+    .map(([owner,v]) =>
+      `<div class="leg" data-owner="${owner.replace(/"/g,'&quot;')}">
+         <span class="dot" style="background:${v.color}"></span>${owner} <span class="n">${v.n}</span>
+       </div>`).join('');
+  el.querySelectorAll('.leg').forEach(leg => leg.onclick = () => {
+    const o = leg.getAttribute('data-owner');
+    if (hidden.has(o)) { hidden.delete(o); leg.classList.remove('off'); }
+    else { hidden.add(o); leg.classList.add('off'); }
+    tick();
+  });
+}
+
+function makeCloud(){
+  const N = sats.length;
+  const geom = new THREE.BufferGeometry();
+  cloudPos = new Float32Array(N*3);
+  cloudCol = new Float32Array(N*3);
+  posAttr = new THREE.BufferAttribute(cloudPos, 3).setUsage(THREE.DynamicDrawUsage);
+  colAttr = new THREE.BufferAttribute(cloudCol, 3).setUsage(THREE.DynamicDrawUsage);
+  geom.setAttribute('position', posAttr);
+  geom.setAttribute('color', colAttr);
+  const mat = new THREE.PointsMaterial({
+    size: 1.7, sizeAttenuation: true, vertexColors: true,
+    map: roundDotTexture(), transparent: true, depthWrite: false, alphaTest: .04
+  });
+  cloud = new THREE.Points(geom, mat);
+  cloud.frustumCulled = false;
+  globe.scene().add(cloud);
+  setupPicking();
+}
+
+// --- hover labels + click-to-fly, via raycasting the point cloud ---
+function setupPicking(){
+  const tip = document.getElementById('tip');
+  const canvas = globe.renderer().domElement;
+  const ray = new THREE.Raycaster();
+  ray.params.Points.threshold = 2.4;   // world units; tuned for globe radius 100
+  const ptr = new THREE.Vector2();
+
+  function pick(e){
+    const r = canvas.getBoundingClientRect();
+    ptr.x =  ((e.clientX - r.left) / r.width)  * 2 - 1;
+    ptr.y = -((e.clientY - r.top)  / r.height) * 2 + 1;
+    ray.setFromCamera(ptr, globe.camera());
+    const hits = ray.intersectObject(cloud);
+    for (const h of hits) if (h.index < drawnCount) return drawn[h.index];
+    return null;
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const d = cloud && pick(e);
+    if (d){
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top  = (e.clientY + 14) + 'px';
+      tip.innerHTML = `<b>${d.name}</b><br><span class="o">${d.owner} · ${d.altKm.toFixed(0)} km up</span>`
+        + `<div class="hint">click to fly in</div>`;
+      canvas.style.cursor = 'pointer';
+    } else { tip.style.display = 'none'; canvas.style.cursor = ''; }
+  });
+  canvas.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  canvas.addEventListener('click', e => {
+    const d = cloud && pick(e);
+    if (d) globe.pointOfView({ lat: d.lat, lng: d.lng, altitude: d.altKm/6371 + 0.25 }, 1200);
+  });
+
+  // let users zoom all the way out to see the geostationary ring (~5.6 Earth radii)
+  const c = globe.controls();
+  if (c) { c.maxDistance = 1200; c.minDistance = 101; }
+}
+
+async function loadCatalog(){
+  try {
+    const data = await (await fetch('catalog.json')).json();
+    for (const o of data){
+      try {
+        const c = new THREE.Color(o.color);
+        sats.push({ name:o.name.trim(), satrec:satellite.twoline2satrec(o.l1,o.l2),
+                    owner:o.owner, color:o.color, r:c.r, g:c.g, b:c.b });
+      } catch(e){}
+    }
+    buildLegend();
+    makeCloud();
+    tick();
+    setInterval(tick, 2000);
+  } catch(e){
+    document.getElementById('count').textContent = "Couldn't load catalog.json — " + e.message;
+  }
+}
+
+function tick(){
+  const now = new Date();
+  const gmst = satellite.gstime(now);
+  const obsGd = { longitude: satellite.degreesToRadians(observer.lon),
+                  latitude: satellite.degreesToRadians(observer.lat), height: 0 };
+  const overhead = [];
+  let n = 0;
+
+  for (const s of sats){
+    if (hidden.has(s.owner)) continue;
+    const pv = satellite.propagate(s.satrec, now);
+    if (!pv.position) continue;
+    const eci = pv.position;
+    const gd = satellite.eciToGeodetic(eci, gmst);
+    const lat = satellite.degreesLat(gd.latitude);
+    const lon = satellite.degreesLong(gd.longitude);
+    const altKm = gd.height;
+
+    const p = globe.getCoords(lat, lon, Math.max(0.005, altKm/6371));
+    cloudPos[n*3]=p.x; cloudPos[n*3+1]=p.y; cloudPos[n*3+2]=p.z;
+    cloudCol[n*3]=s.r; cloudCol[n*3+1]=s.g; cloudCol[n*3+2]=s.b;
+    drawn[n] = { name:s.name, owner:s.owner, altKm, lat, lng:lon };
+    n++;
+
+    const ecf = satellite.eciToEcf(eci, gmst);
+    const elevDeg = satellite.radiansToDegrees(satellite.ecfToLookAngles(obsGd, ecf).elevation);
+    if (elevDeg > 0) overhead.push({ ...s, elevDeg, altKm });
+  }
+
+  drawnCount = n;
+  if (cloud){
+    cloud.geometry.setDrawRange(0, n);
+    posAttr.needsUpdate = true; colAttr.needsUpdate = true;
+    cloud.geometry.computeBoundingSphere();
+  }
+
+  overhead.sort((a,b)=>b.elevDeg-a.elevDeg);
+  document.getElementById('count').textContent =
+    `${overhead.length} satellites above your horizon now · ${n.toLocaleString()} dots shown`;
+  document.getElementById('list').innerHTML = overhead.slice(0,100).map(s => `
+    <div class="row">
+      <div class="name"><span class="dot" style="background:${s.color}"></span>${s.name}</div>
+      <div class="meta"><span>${s.owner}</span>
+        <span class="elev">${s.elevDeg.toFixed(0)}° up</span>
+        <span>${s.altKm.toFixed(0)} km</span></div>
+    </div>`).join('');
+}
+
+setObserver(observer.lat, observer.lon);
+loadCatalog();
+</script>
+</body>
+</html>
